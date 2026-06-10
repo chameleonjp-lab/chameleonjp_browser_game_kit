@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ランキング対応ゲーム</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; overflow-x: hidden; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #111; color: #fff; }
+    button, input { font: inherit; min-height: 44px; }
+    .app { width: min(100%, 430px); margin: 0 auto; padding: 16px; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .game-area { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section id="home" class="screen active">
+      <h1>ゲーム名</h1>
+      <label>名前 <input id="nameInput" maxlength="10" autocomplete="nickname"></label>
+      <button id="startBtn">ゲーム開始</button>
+      <button id="shareBtn">ゲームをシェア</button>
+      <a href="https://chameleonjp.codeberg.page/chameleonjp_lab/">実験場へ</a>
+    </section>
+
+    <section id="game" class="screen game-area">
+      <p>ゲーム画面</p>
+      <button id="finishBtn">ゲーム終了</button>
+    </section>
+
+    <section id="result" class="screen">
+      <h2>結果</h2>
+      <p id="scoreText"></p>
+      <p id="submitStatus">ランキング送信前</p>
+      <div id="rankingBox">ランキングを読み込みます。</div>
+      <button id="retryBtn">もう一度</button>
+      <button id="shareResultBtn">結果をシェア</button>
+      <button id="homeBtn">ホームへ</button>
+      <a href="https://chameleonjp.codeberg.page/chameleonjp_lab/">実験場へ</a>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://mlpnjgezrnhdxsxolyzj.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_drzcy0v97knU6FgjqSgBHw_0A9XPdFM';
+    const GAME_SLUG = 'replace_game_slug';
+    const CLIENT_VERSION = 'v1';
+
+    let hasSubmitted = false;
+    let finalScore = 0;
+
+    const screens = {
+      home: document.getElementById('home'),
+      game: document.getElementById('game'),
+      result: document.getElementById('result')
+    };
+
+    function showScreen(name) {
+      Object.values(screens).forEach(screen => screen.classList.remove('active'));
+      screens[name].classList.add('active');
+    }
+
+    async function supabaseRpc(functionName, body) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`Supabase RPC failed: ${res.status}`);
+      return res.json();
+    }
+
+    async function submitScore() {
+      if (hasSubmitted) return;
+      hasSubmitted = true;
+      const displayName = document.getElementById('nameInput').value.trim();
+      if (!displayName) {
+        document.getElementById('submitStatus').textContent = '名前を入力してください。';
+        hasSubmitted = false;
+        return;
+      }
+      document.getElementById('submitStatus').textContent = 'ランキング送信中...';
+      try {
+        await supabaseRpc('submit_score', {
+          p_display_name: displayName,
+          p_game_slug: GAME_SLUG,
+          p_score: finalScore,
+          p_client_version: CLIENT_VERSION
+        });
+        document.getElementById('submitStatus').textContent = 'ランキング送信完了';
+      } catch (error) {
+        console.error(error);
+        document.getElementById('submitStatus').textContent = 'ランキング送信に失敗しました。';
+      }
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => showScreen('game'));
+    document.getElementById('finishBtn').addEventListener('click', () => {
+      finalScore = 100;
+      document.getElementById('scoreText').textContent = `スコア: ${finalScore}`;
+      showScreen('result');
+      submitScore();
+    });
+    document.getElementById('retryBtn').addEventListener('click', () => {
+      hasSubmitted = false;
+      showScreen('game');
+    });
+    document.getElementById('homeBtn').addEventListener('click', () => showScreen('home'));
+  </script>
+</body>
+</html>
