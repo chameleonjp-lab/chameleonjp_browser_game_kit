@@ -82,7 +82,7 @@ const GAME_SLUG = "ここに_game_slug";
 const CLIENT_VERSION = "game_slug_vYYYYMMDD_01";
 const GAME_TITLE = "ここにゲーム名";
 const GAME_URL = "https://chameleonjp.codeberg.page/ここに_game_slug/";
-const LAB_URL = "https://chameleonjp.codeberg.page/chameleonjp_lab/";
+const LAB_URL = "https://chameleonjp-lab.github.io/chameleonjp_lab/";
 ```
 
 `GAME_SLUG` は、Supabase `public.games.game_slug` と完全一致させる。
